@@ -3,6 +3,7 @@
 use Db;
 use Lang;
 use Request;
+use BackendAuth;
 use Form as FormHelper;
 use Backend\Classes\ControllerBehavior;
 use Winter\Storm\Database\Model;
@@ -278,6 +279,21 @@ class RelationController extends ControllerBehavior
         $this->vars['relationExtraConfig'] = $this->extraConfig;
     }
 
+    protected function validateAccess()
+    {
+        $field = post(self::PARAM_FIELD);
+
+        if ($field && !$this->hasAccess($field)) {
+            throw new ApplicationException(Lang::get('backend::lang.page.access_denied.label'));
+        }
+    }
+
+    protected function hasAccess(string $field): bool
+    {
+        $permissions = $this->originalConfig?->{$field}['permissions'] ?? [];
+        return $permissions ? BackendAuth::getUser()->hasAccess($permissions, false) : true;
+    }
+
     /**
      * The controller action is responsible for supplying the parent model
      * so it's action must be fired. Additionally, each AJAX request must
@@ -288,6 +304,8 @@ class RelationController extends ControllerBehavior
         if ($this->initialized) {
             return;
         }
+
+        $this->validateAccess();
 
         $this->controller->pageAction();
         if ($fatalError = $this->controller->getFatalError()) {
@@ -425,6 +443,10 @@ class RelationController extends ControllerBehavior
      */
     public function relationRender($field, $options = [])
     {
+        if (!$this->hasAccess($field)) {
+            return;
+        }
+
         /*
          * Session key
          */
@@ -473,6 +495,8 @@ class RelationController extends ControllerBehavior
      */
     public function relationRefresh($field = null)
     {
+        $this->validateAccess();
+
         $field = $this->validateField($field);
 
         $result = ['#'.$this->relationGetId('view') => $this->relationRenderView($field)];
