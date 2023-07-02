@@ -279,7 +279,7 @@ class RelationController extends ControllerBehavior
         $this->vars['relationExtraConfig'] = $this->extraConfig;
     }
 
-    protected function validateAccess()
+    protected function validateAccess(): void
     {
         $field = post(self::PARAM_FIELD);
 
@@ -288,7 +288,7 @@ class RelationController extends ControllerBehavior
         }
     }
 
-    protected function hasAccess(string $field): bool
+    protected function hasAccess(string $field = null): bool
     {
         $permissions = $this->originalConfig?->{$field}['permissions'] ?? [];
         return $permissions ? BackendAuth::getUser()->hasAccess($permissions, false) : true;
